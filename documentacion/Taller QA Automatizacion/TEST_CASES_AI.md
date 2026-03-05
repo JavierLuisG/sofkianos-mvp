@@ -222,16 +222,16 @@ And el contenido debe seguir siendo legible y los filtros deben ser accesibles
 
 ---
 
-### Técnicas ISTQB Aplicadas:
+# TC US-015
 
--   **Partición de Equivalencia (PE):** Para validar las categorías cerradas (Innovation, Teamwork, Passion, Mastery).
-    
-    +1
-    
--   **Análisis de Valores Límite (AVL):** Aplicado a la lógica de fechas y al tiempo de _debounce_ de 500ms.
-    
--   **Pruebas de Transición de Estados:** Para validar la reactividad del formulario y el feedback visual (_loading_).
-    
+Como experto en pruebas de software, he analizado el contexto de negocio de SofkianOS y la historia de usuario US-013. A continuación, presento el diseño de los casos de prueba estructurados en lenguaje Gherkin, organizados por bloques funcionales de la página de lista de Kudos.
+
+**Técnicas ISTQB Aplicadas:**
+- **Partición de Equivalencia (PE)**: Para validar escenarios con datos existentes, lista vacía y combinaciones de filtros.
+- **Análisis de Valores Límite (AVL)**: Para validar paginación y límites de visualización.
+- **Pruebas de Transición de Estados (TE)**: Para validar cambios de filtros, navegación y sincronización con URL.
+- **Pruebas de Seguridad**: Para validar enmascaramiento e integridad de identificadores.
+- **Pruebas de Experiencia de Usuario (UX)**: Para validar estados de carga y responsividad.
 
 ----------
 
@@ -241,104 +241,90 @@ And el contenido debe seguir siendo legible y los filtros deben ser accesibles
 
 **Caso de Prueba 01: Optimización de peticiones mediante Debounce**
 
--   **Dado**  que el empleado se encuentra en el campo "Búsqueda de texto"
-    
--   **Cuando**  escribe rápidamente la palabra "Innovation"
-    
--   **Y** transcurren menos de 500 milisegundos desde la última tecla presionada
-    
--   **Entonces**  el sistema no debe ejecutar la función de filtrado  `onFilter`
-    
--   **Pero** al cumplirse los 500 milisegundos de inactividad, el sistema debe disparar la búsqueda automáticamente
-    
+```gherkin
+Given el empleado se encuentra en el campo "Búsqueda de texto"  
+When escribe rápidamente la palabra "Innovation"  
+And transcurren menos de 500 milisegundos desde la última tecla presionada  
+Then el sistema no debe ejecutar la función de filtrado `onFilter`  
+And al cumplirse los 500 milisegundos de inactividad, el sistema debe disparar la búsqueda automáticamente
+```
 
 **Caso de Prueba 02: Búsqueda por texto con placeholders correctos**
 
--   **Dado**  que el componente de filtros se ha renderizado
-    
--   **Cuando**  el empleado visualiza el input de búsqueda
-    
--   **Entonces** debe mostrar el texto de ayuda "Buscar en de, para, mensaje..."
-    
+```gherkin
+Given el componente de filtros se ha renderizado  
+When el empleado visualiza el input de búsqueda  
+Then debe mostrar el texto de ayuda "Buscar en de, para, mensaje..."
+```
 
-----------
+---
 
 ### 2. Lógica de Fechas y Validaciones
 
 **Caso de Prueba 03: Validación de rango cronológico de fechas**
 
--   **Dado** que el empleado ingresa en "Fecha desde" el día `2026-03-05`
-    
--   **Cuando**  ingresa en "Fecha hasta" una fecha anterior como  `2026-03-01`
-    
--   **Entonces** el sistema debe mostrar un mensaje de error indicando que la fecha inicial no puede ser superior a la final
-    
+```gherkin
+Given el empleado ingresa en "Fecha desde" el día `2026-03-05`  
+When ingresa en "Fecha hasta" una fecha anterior como `2026-03-01`  
+Then el sistema debe mostrar un mensaje de error indicando que la fecha inicial no puede ser superior a la final
+```
 
 **Caso de Prueba 04: Restricción de búsqueda vacía**
 
--   **Dado**  que el empleado no ha ingresado texto ni seleccionado categorías o fechas
-    
--   **Cuando**  intenta presionar el botón "Aplicar Filtros"
-    
--   **Entonces** el sistema debe avisar que no se ha seleccionado ningún criterio de búsqueda
-    
+```gherkin
+Given el empleado no ha ingresado texto ni seleccionado categorías o fechas  
+When intenta presionar el botón "Aplicar Filtros"  
+Then el sistema debe avisar que no se ha seleccionado ningún criterio de búsqueda
+```
 
-----------
+---
 
 ### 3. Selectores y Categorías
 
 **Caso de Prueba 05: Selección de categorías predefinidas**
 
--   **Dado**  que el empleado despliega el dropdown de categorías
-    
--   **Entonces** debe visualizar exactamente las opciones: "Todas", "Innovation", "Teamwork", "Passion" y "Mastery"
-    
-    +1
-    
+```gherkin
+Given el empleado despliega el dropdown de categorías  
+Then debe visualizar exactamente las opciones: "Todas", "Innovation", "Teamwork", "Passion" y "Mastery"
+```
 
 **Caso de Prueba 06: Limpieza de filtros (Reset)**
 
--   **Dado**  que el empleado tiene filtros activos (Texto: "Gran líder", Categoría: "Teamwork")
-    
--   **Cuando** hace clic en el botón "Limpiar"
-    
--   **Entonces**  todos los campos deben volver a sus valores por defecto
-    
--   **Y**  la lista de Kudos debe mostrarse sin filtros aplicados
-    
+```gherkin
+Given el empleado tiene filtros activos (Texto: "Gran líder", Categoría: "Teamwork")  
+When hace clic en el botón "Limpiar"  
+Then todos los campos deben volver a sus valores por defecto  
+And la lista de Kudos debe mostrarse sin filtros aplicados
+```
 
-----------
+---
 
 ### 4. Estados de la Interfaz y Responsividad
 
 **Caso de Prueba 07: Deshabilitación de controles durante la carga**
 
--   **Dado**  que el sistema está procesando una consulta de Kudos (estado  _loading_)
-    
--   **Cuando**  el componente recibe la propiedad de carga activa
-    
--   **Entonces** todos los inputs y botones del componente de filtros deben estar bloqueados (Disabled)
-    
--   **And** se debe mostrar un indicador visual de carga (spinner)
-    
+```gherkin
+Given el sistema está procesando una consulta de Kudos (estado loading)  
+When el componente recibe la propiedad de carga activa  
+Then todos los inputs y botones del componente de filtros deben estar bloqueados (Disabled)  
+And se debe mostrar un indicador visual de carga (spinner)
+```
 
 **Caso de Prueba 08: Adaptabilidad en dispositivos móviles**
 
--   **Dado**  que el usuario accede desde un teléfono móvil (ancho de pantalla reducido)
-    
--   **Cuando**  visualiza el componente  `KudoFilters`
-    
--   **Entonces** los campos deben apilarse de forma vertical (Stack vertical) para facilitar la lectura
-    
+```gherkin
+Given el usuario accede desde un teléfono móvil (ancho de pantalla reducido)  
+When visualiza el componente `KudoFilters`  
+Then los campos deben apilarse de forma vertical (Stack vertical) para facilitar la lectura
+```
 
 **Caso de Prueba 09: Disposición en escritorio (Desktop)**
 
--   **Dado**  que el usuario accede desde una computadora de escritorio
-    
--   **Cuando**  visualiza el componente de filtros
-    
--   **Entonces** la disposición de los campos debe ser horizontal para optimizar el espacio
-
+```gherkin
+Given el usuario accede desde una computadora de escritorio  
+When visualiza el componente de filtros  
+Then la disposición de los campos debe ser horizontal para optimizar el espacio
+```
 
 ## 📊 Tabla de Casos de Prueba - HU-015
 
@@ -352,8 +338,6 @@ And el contenido debe seguir siendo legible y los filtros deben ser accesibles
 | **TC-06** | **Persistencia de Filtros** | Validar que los filtros se mantengan al navegar hacia atrás o refrescar la página (**Query Params**). | Caso crítico en SPAs para evitar la pérdida de contexto del usuario durante la exploración de Kudos. |
 
 ---
-
-
 
 # TC HU-016
 
