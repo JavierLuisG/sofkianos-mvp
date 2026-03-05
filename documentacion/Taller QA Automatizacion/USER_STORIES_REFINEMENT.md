@@ -144,6 +144,232 @@ La **US-013** es una historia de usuario técnica y bien documentada, pero **sob
 
 ---
 
+# US-015: Componente de Filtros
+
+## Historia Original
+
+**Título**: Crear KudoFilters con campos de búsqueda interactivos  
+**Story Points**: 5  
+**Prioridad**: Media  
+**Epic**: EP-002
+
+**Descripción**:
+
+**Como** usuario final  
+**Quiero** filtrar kudos con formulario claro  
+**Para** encontrar reconocimientos específicos sin hacer scroll infinito
+
+**Especificación props**:
+
+```TypeScript 
+interface KudoFiltersProps { 
+    onFilter: (filters: KudoFilters) => void; 
+} 
+interface KudoFilters { 
+    category?: 'Innovation' | 'Teamwork' | 'Passion' | 'Mastery'; 
+    searchText?: string; 
+    startDate?: string; 
+    endDate?: string; 
+}
+```
+
+Interface `KudoFiltersProps`
+
+- `onFilter`: función que recibe los filtros aplicados.
+
+Interface `KudoFilters`
+
+- `category` (opcional): Innovation | Teamwork | Passion | Mastery
+- `searchText` (opcional): texto de búsqueda
+- `startDate` (opcional): fecha inicial
+- `endDate` (opcional): fecha final
+
+**Criterios de aceptación**:
+
+**Campos del formulario**
+
+- **Búsqueda de texto**: input debounced (500ms). Placeholder: "Buscar en de, para, mensaje...".
+- **Categoría**: select dropdown con opciones + "Todas".
+- **Fecha desde/hasta**: date input HTML5.
+- **Botones**:
+  - "Aplicar Filtros" (submit)
+  - "Limpiar" (reset form a defaults)
+
+**Validación**
+
+- Si startDate > endDate, mostrar error.
+- Avisar si no se selecciona nada.
+
+**Estados**
+
+- **Disabled** mientras se carga lista.
+- **Visual feedback** de búsqueda activa (loading spinner).
+
+**Responsive**
+
+Stack vertical en mobile, horizontal en desktop.
+
+---
+
+# Análisis de Refinamiento
+
+### 1. Claridad y Ambigüedades
+
+Tras analizar la historia desde una perspectiva de QA (ISTQB), se identifican los siguientes puntos de ambigüedad:
+
+- **Alcance de la Búsqueda vs. Privacidad:**  
+  El criterio dice "Buscar en de, para...". Dado que el sistema maneja **emails enmascarados** (ej: j*z@domain.com), se debe aclarar si el filtro busca sobre el valor real en el backend o sobre el valor ofuscado que ve el usuario. Esto afecta la testabilidad de la búsqueda.
+
+- **Definición de "Avisar":**  
+  El criterio "Avisar si no se selecciona nada" no especifica el mecanismo. ¿Es un mensaje de error preventivo, un cambio de color en los bordes o un Toast?
+
+- **Comportamiento del Botón Limpiar:**  
+  No se especifica si al presionar "Limpiar" el componente debe ejecutar automáticamente la función `onFilter` con valores vacíos para refrescar la lista o si solo debe limpiar los campos visualmente.
+
+- **Feedback del Debounce:**  
+  Aunque el debounce es de 500ms, no se aclara si debe aparecer el loading spinner inmediatamente cuando el usuario empieza a escribir o solo cuando el tiempo de espera se cumple y se dispara la petición.
+
+---
+
+### 2. Análisis de Criterios INVEST
+
+| Criterio | Evaluación | Justificación |
+|--------|--------|--------|
+| **Independiente** | ✅ Cumple | El componente se comunica por props y no depende del estado global de la página de lista, facilitando su desarrollo aislado. |
+| **Negociable** | ⚠️ Parcial | Incluye detalles técnicos muy específicos (como "useEffect cleanup") que deberían ser decisiones del desarrollador y no criterios de aceptación. |
+| **Valiosa** | ✅ Cumple | Es fundamental para la usabilidad del sistema, ya que evita la fatiga del usuario provocada por el scroll infinito. |
+| **Estimable** | ✅ Cumple | La valoración de 5 Story Points es adecuada para un componente que integra lógica de debounce y validaciones de fechas. |
+| **Small (Pequeña)** | ✅ Cumple | El alcance está bien definido y acotado a la creación de un único componente de filtrado. |
+| **Testeable** | ✅ Cumple | Los criterios son verificables, incluyendo el tiempo de espera de 500ms y la lógica de validación de rangos de fecha. |
+
+---
+
+### 3. Coherencia con el Proyecto
+
+La historia es coherente con el ecosistema **SofkianOS**:
+
+- **Gamificación:** Incluye correctamente las categorías Innovation, Teamwork, Passion y Mastery.
+- **Arquitectura:** Se alinea con el flujo de **Consulta de Kudos** del sistema asíncrono.
+- **Privacidad:** Debe alinearse con el enmascaramiento de datos. Si el usuario filtra por un nombre que está enmascarado, el sistema debe ser capaz de resolver esa consulta.
+
+---
+
+### 4. Interacción y Refinamiento (Preguntas para el PO)
+
+Para la sesión de refinamiento se sugieren las siguientes preguntas:
+
+1. **¿Límites de fecha?**  
+   ¿Se deben permitir búsquedas con fechas futuras en startDate o endDate?
+
+2. **¿Búsqueda sobre enmascarados?**  
+   Si busco "Juan" y el email es j***@sofka.com, ¿el filtro debe devolver resultados?
+
+3. **¿Persistencia?**  
+   ¿Al aplicar los filtros se deben actualizar los parámetros de la URL para permitir deep linking (como se pide en la US-013)?
+
+4. **¿Error de fechas?**  
+   ¿El error de startDate > endDate debe ser un mensaje bloqueante o simplemente deshabilitar el botón "Aplicar"?
+
+---
+
+### 5. Resumen del Análisis
+
+La **US-015** es una historia sólida y técnicamente detallada. Su mayor fortaleza es la especificación del debounce y el diseño responsivo. Su debilidad es la falta de definición en el manejo de la privacidad dentro de la búsqueda de texto.
+
+**Veredicto:** **APROBADA CON OBSERVACIONES.**  
+Requiere definir el comportamiento de búsqueda contra datos protegidos.
+
+---
+
+# Historia de Usuario Refinada
+
+---
+
+### 1. Descripción de la HU
+
+**Como** empleado de Sofka,  
+**Quiero** contar con un formulario de filtros interactivo,  
+**Para** localizar reconocimientos específicos por texto, categoría o rango de fechas, optimizando la visualización de la cultura de reconocimiento sin necesidad de scroll extenso.
+
+---
+
+### 2. Criterios de Aceptación
+
+#### A. Campos y Funcionalidad de Entrada
+
+- **Búsqueda Global (Debounce)**  
+  Input de texto con placeholder "Buscar en de, para, mensaje...".  
+  Debe esperar **500ms** de inactividad antes de disparar la búsqueda.
+
+- **Filtro por Categoría**  
+  Dropdown con las opciones:
+  - Todas
+  - Innovation
+  - Teamwork
+  - Passion
+  - Mastery
+
+  Valor por defecto: **Todas**.
+
+- **Rango Cronológico**  
+  Dos campos tipo fecha (HTML5):
+
+  - Fecha Desde
+  - Fecha Hasta
+
+---
+
+#### B. Validaciones de Negocio
+
+- **Validación de Fechas**  
+  Si **Fecha Desde > Fecha Hasta**, el sistema debe mostrar un mensaje de error visual y deshabilitar el envío.
+
+- **Criterios Vacíos**  
+  Al presionar "Aplicar Filtros" sin haber modificado ningún campo, se debe mostrar el mensaje:
+
+  `"Seleccione al menos un criterio para filtrar"`
+
+---
+
+#### C. Estados de Interfaz y Feedback
+
+- **Procesamiento (Loading)**  
+  Mientras la lista de Kudos se está actualizando, los inputs y botones de filtro deben cambiar a estado **disabled**.
+
+- **Indicador Visual**  
+  Mostrar un **spinner de carga** cuando el debounce termine y la consulta esté activa.
+
+- **Reinicio (Reset)**  
+  El botón **"Limpiar"** debe:
+
+  - Resetear el formulario a valores por defecto
+  - Disparar una actualización de la lista para mostrar todos los Kudos
+
+---
+
+#### D. Diseño Responsivo y Accesibilidad
+
+- **Desktop**  
+  Disposición horizontal (una sola fila).
+
+- **Mobile (<768px)**  
+  Disposición vertical (stack) para facilitar la interacción táctil.
+
+- **Accesibilidad**  
+  Cada campo debe incluir atributos **aria-label** descriptivos para lectores de pantalla.
+
+---
+
+# 📊 Tabla Comparativa: Historia Original vs Historia Refinada
+
+| **HU Original** | **HU Refinada por la Gema** | **Diferencias Detectadas** |
+|-----------------|-----------------------------|-----------------------------|
+| **Filtros y Búsqueda**<br><br>Define un debounce de 500ms para la búsqueda y el uso de placeholders básicos en los inputs. | **Filtros e Interacción Pulida**<br><br>Mantiene el debounce de 500ms pero añade el comportamiento esperado para el botón "Limpiar": reset de estado local y disparo automático de fetch para restaurar la lista completa. | La Gema añadió:<br>• Flujo completo del botón "Limpiar"<br>• Definición de comportamiento post-acción<br>• Sincronización automática de datos al resetear |
+| **Validaciones**<br><br>Menciona únicamente el escenario de error si la fecha de inicio es mayor a la fecha fin. | **Validaciones Robustas**<br><br>Añade validación para el escenario de "Sin criterios seleccionados" y define el estado visual del botón de filtrado ante errores de entrada o lógica de fechas. | La Gema añadió:<br>• Prevención de peticiones innecesarias al backend<br>• Estado dinámico del botón ante errores de usuario<br>• Validación de estados vacíos |
+| **Especificación Técnica**<br><br>Muestra una estructura rígida al mencionar detalles de implementación como el uso de useEffect cleanup. | **Especificación Funcional**<br><br>Se centra en el comportamiento observable, otorgando libertad técnica al desarrollador sobre cómo gestionar el ciclo de vida del componente. | La Gema eliminó:<br>• Dependencia de implementación técnica específica<br>• Restricciones de código innecesarias |
+| **Estados de UI**<br><br>Menciona estados básicos de disabled y spinner de carga genérico. | **Estados de UI y Feedback**<br><br>Vincula los estados de carga con la naturaleza asíncrona del sistema distribuido SofkianOS. | La Gema añadió:<br>• Contexto de sistema distribuido<br>• Justificación de estados asíncronos |
+| **Responsive**<br><br>Se limita a mencionar el cambio entre stack vertical y horizontal. | **Responsive y Accesibilidad**<br><br>Añade requisitos obligatorios de ARIA labels para asegurar accesibilidad web. | La Gema añadió:<br>• Accesibilidad (A11y)<br>• Etiquetas descriptivas para lectores de pantalla |
+---
 # US-016: Paginación Interactiva
 
 ## Historia Original
