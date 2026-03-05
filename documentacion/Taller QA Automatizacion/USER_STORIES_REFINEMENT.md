@@ -1,17 +1,163 @@
+# US-013: Página de Lista de Kudos
+
 ## Historia Original
 
-### US-016: Paginación Interactiva
+**Título**: Crear KudosListPage componente principal  
+**Story Points**: 5  
+**Prioridad**: Crítica  
+**Epic**: EP-001
+
+**Descripción**:
+
+**Como** usuario final  
+**Quiero** una página dedicada a explorar kudos  
+**Para** ver todos los reconocimientos registrados en la organización
+
+**Criterios de aceptación**:
+
+Componente KudosListPage.tsx en src/pages/
+**Parámetros de URL preservados (deep linking)**:
+?page=1&size=20&category=TEAMWORK&searchText=...
+Estados manejados correctamente:
+
+**Cargando inicial**: skeleton loaders  
+**Cargando en cambio de página**: opacity reducida o loading bar  
+**Vacío**: mensaje "No se encontraron kudos"  
+**Error**: mostrar error con opción de reintentar
+
+**Estructura HTML**:
+- Header con título "Explorar Kudos"
+- KudoFilters component (arriba)
+- Loading/Empty/Error states (condicionales)
+- KudoTable component (contenedor datos)
+- KudoPagination component (abajo)
+  Responsive: mobile (320px), tablet (768px), desktop (1920px)
+  Accesibilidad: ARIA labels, semantic HTML
+
+---
+
+## Análisis de Refinamiento
+
+### 1. Claridad y Ambigüedades
+
+La historia tiene una estructura técnica sólida, pero presenta vaguedades desde la perspectiva de la experiencia de usuario y el dominio:
+
+* **El "Quién" en el Listado:** El contexto menciona que los emails se enmascaran (ej: `j***z@domain.com`). La historia no especifica si la tabla debe mostrar el email enmascarado o un nombre/alias. Si el backend solo entrega datos enmascarados, la búsqueda por `searchText` podría ser ineficaz si el usuario busca por nombre real.
+* **Comportamiento del Filtrado:** No se aclara si el filtrado por `category` y `searchText` debe disparar una petición inmediata al backend o si requiere un botón de "Buscar". Dado que el sistema busca ser asíncrono y fluido, esto es vital para el diseño de la interfaz.
+* **Definición de "KudoTable":** ¿Qué columnas debe tener? Según el contexto, debería incluir: *Remitente (enmascarado), Destinatario (enmascarado), Categoría (con su icono de gamificación) y Mensaje*.
+* **Recomendación:** Definir explícitamente las columnas de la tabla y aclarar si el `searchText` aplica sobre el mensaje, el email enmascarado o ambos.
+
+### 2. Análisis de Criterios INVEST
+
+Evaluamos la historia frente al estándar de calidad ágil:
+
+| Criterio | Calificación | Análisis Detallado |
+| --- | --- | --- |
+| **I**ndependiente | ✅ Alto | Se puede desarrollar sin depender de la lógica del *Consumer Worker*, siempre que el contrato de la API de consulta esté definido. |
+| **N**egociable | ⚠️ Medio | Los criterios de aceptación son muy específicos técnicamente (nombres de archivos y componentes), lo que deja poco espacio para que el desarrollador proponga mejores soluciones de UI. |
+| **V**aluable | ✅ Alto | Es la funcionalidad central para la visibilidad del reconocimiento en la cultura Sofka. Sin esto, los Kudos enviados son "invisibles". |
+| **E**stimable | ✅ Alto | Con 5 *Story Points* y la descripción técnica, el equipo puede estimar el esfuerzo de maquetación y consumo de API. |
+| **S**mall (Pequeña) | ❌ Bajo | **Punto Crítico:** La historia abarca demasiado. Incluye filtros, paginación, *deep linking*, estados de error, *skeletons* y responsividad extrema. Es una historia "Épica" disfrazada. |
+| **T**esteable | ✅ Alto | Los criterios de aceptación (estados de carga, parámetros de URL) son fácilmente verificables mediante pruebas unitarias y de E2E. |
+
+### 3. Coherencia con el Proyecto
+
+La historia está alineada con el flujo de **Consulta de Kudos** descrito en el contexto, pero hay una oportunidad de mejora en la **Gamificación**:
+
+* **Visualización de Categorías:** El contexto menciona categorías de gamificación (Innovation, Teamwork, etc.). La historia debería exigir que la lista sea visualmente coherente con estos conceptos (ej: colores o iconos específicos por categoría) para "fortalecer la cultura" como dicta el objetivo del proyecto.
+* **Seguridad:** El contexto menciona que el sistema no tiene autenticación actualmente. Esta historia debe ser coherente con eso: cualquier usuario que acceda a la URL debe poder ver la lista sin loguearse (según el estado actual del MVP).
+
+### 4. Interacción y Refinamiento (Preguntas para el PO)
+
+Para la sesión de refinamiento, sugiero plantear lo siguiente:
+
+1. **¿Búsqueda en tiempo real?** ¿El `searchText` debe filtrar mientras el usuario escribe (debouncing) o al presionar Enter?
+2. **¿Visualización de IDs?** El contexto menciona "IDs hasheados no secuenciales". ¿Deben mostrarse estos IDs en la tabla o son solo para el *deep linking* de cada Kudo?
+3. **¿Acciones en la lista?** ¿Un usuario puede hacer clic en un Kudo de la lista para ver el mensaje completo en un modal o una página de detalle? (Esto afectaría el alcance de la `KudoTable`).
+4. **¿División de la historia?** Dado que es de prioridad Crítica y tamaño 5, ¿podemos separar la "Paginación y Filtros" de la "Visualización Básica y Estados de Carga" para asegurar una entrega más rápida?
+
+### 5. Resumen del Análisis
+
+La **US-013** es una historia de usuario técnica y bien documentada, pero **sobredimensionada**. Cumple con los objetivos de negocio de dar visibilidad a los reconocimientos y respeta las restricciones de privacidad (enmascaramiento).
+
+* **Fortaleza:** Excelente detalle en los estados de la interfaz (Loading, Error, Empty) y manejo de URL.
+* **Debilidad:** Riesgo de incumplimiento del criterio "Small". Es una tarea densa que podría bloquear el sprint si surgen problemas con la integración de los filtros.
+* **Veredicto:** **APROBADA CON OBSERVACIONES.** Se recomienda dividir la historia en dos: una para la estructura base y visualización, y otra para la lógica compleja de filtrado y *deep linking*.
+
+---
+
+## Historia de Usuario Refinada
+
+---
+
+### 1. Descripción de la HU
+
+**Como** empleado de Sofka,  
+**Quiero** disponer de una página dedicada a explorar los reconocimientos (Kudos) de la organización,
+**Para** visualizar el impacto de la cultura Sofkian, identificando las categorías de gamificación (Innovation, Teamwork, Passion, Mastery) en los equipos distribuidos.
+
+### 2. Criterios de Aceptación
+
+#### A. Estructura y Componentes (Frontend)
+
+* **Ubicación:** Crear el componente `KudosListPage.tsx` en `src/pages/` utilizando React 19 y TypeScript 5.9.
+* **Layout Responsivo:** El diseño debe adaptarse a resoluciones Mobile (320px), Tablet (768px) y Desktop (1920px) mediante Tailwind CSS.
+* **Sub-componentes:**
+* `KudoFilters`: Filtros superiores para categoría y búsqueda.
+* `KudoTable`: Contenedor de datos que debe mostrar: Remitente, Destinatario, Categoría (Icono/Etiqueta) y Mensaje.
+* `KudoPagination`: Control inferior para navegación de registros.
+
+#### B. Lógica de Negocio y Privacidad
+
+* **Privacidad de Datos:** La tabla debe mostrar los correos electrónicos de remitente y destinatario **enmascarados** (ej: `j***z@domain.com`) para proteger la identidad, tal como lo define el flujo de consulta.
+* **Categorías de Gamificación:** Solo se deben permitir y mostrar las categorías predefinidas: `Innovation`, `Teamwork`, `Passion` y `Mastery`.
+* **Mensajes:** Se deben renderizar mensajes de entre 10 y 500 caracteres, respetando la restricción de longitud del backend.
+
+#### C. Estado de la Interfaz (UX)
+
+* **Cargando inicial:** Implementar *skeleton loaders* para evitar saltos visuales.
+* **Cargando en transición:** Al cambiar de página o aplicar filtros, aplicar opacidad reducida (0.5) en la tabla para indicar procesamiento.
+* **Estado Vacío:** Mostrar mensaje informativo "No se encontraron kudos" cuando el arreglo de datos sea `[]`.
+* **Manejo de Errores:** Mostrar una alerta con el detalle del error y un botón de "Reintentar" que refresque la consulta.
+
+#### D. Navegación y Persistencia (Deep Linking)
+
+* **Parámetros de URL:** El estado de la vista debe persistir en la URL para permitir compartir enlaces directos:
+  `?page=1&size=20&category=TEAMWORK&searchText=...`
+* **Sincronización:** Al cargar la página, los filtros deben inicializarse con los valores presentes en la URL.
+
+#### E. Requisitos Técnicos y Accesibilidad
+
+* **Accesibilidad:** Uso estricto de HTML semántico y atributos `ARIA labels` para lectores de pantalla.
+* **Consumo de API:** Realizar peticiones asíncronas vía Axios al endpoint de consulta paginada del Producer API.
+
+---
+
+## 📊 Tabla Comparativa: Historia Original vs Historia Refinada
+
+| **HU Original** | **HU Refinada por la Gema** | **Diferencias Detectadas** |
+|-----------------|----------------------------|----------------------------|
+| **Descripción y Alcance Funcional**<br><br>No especifica cómo se muestran remitente y destinatario.<br>No define sobre qué campos aplica la búsqueda (`searchText`).<br>No detalla estructura visible de la tabla.<br>No contempla navegación hacia detalle del Kudo.<br>Cumple función operativa básica de listado. | **Descripción Mejorada y Contextualizada**<br><br>Define si se mostrará email enmascarado o alias.<br>Especifica sobre qué campos aplica la búsqueda (mensaje, correo enmascarado o ambos).<br>Exige definición explícita de columnas: Remitente, Destinatario, Categoría, Mensaje.<br>Evalúa posible vista detalle (modal o página independiente).<br>Conecta la visualización con la cultura organizacional y la gamificación. | La Gema agregó:<br>• Precisión sobre privacidad y enmascaramiento.<br>• Claridad funcional del buscador.<br>• Definición explícita de estructura de datos visible.<br>• Consideración de extensibilidad (vista detalle).<br>• Alineación estratégica con objetivos culturales.<br><br>Impacto: Mejora la testabilidad y elimina ambigüedades críticas. |
+| **Comportamiento de Filtros y Búsqueda**<br><br>No define cómo se ejecuta el filtrado.<br>No especifica si la búsqueda es automática o requiere acción explícita.<br>No contempla impacto del enmascaramiento en la efectividad del buscador. | **Comportamiento Refinado**<br><br>Define si el filtrado es en tiempo real (debounce) o mediante botón.<br>Solicita aclarar sincronización con backend.<br>Relaciona privacidad con efectividad del buscador.<br>Considera impacto en rendimiento y experiencia de usuario. | La Gema agregó:<br>• Definición del disparador de búsqueda.<br>• Consideración de rendimiento y UX.<br>• Identificación de dependencia backend–frontend.<br><br>Impacto: Reduce riesgo técnico y mejora diseño de pruebas automatizadas. |
+| **Criterios Técnicos y Alcance de la Historia**<br><br>Define nombres de archivos y componentes específicos.<br>Incluye múltiples responsabilidades (filtros, paginación, estados, deep linking, responsividad).<br>Story Points: 5.<br>No menciona reglas de acceso. | **Revisión bajo INVEST y Coherencia**<br><br>Identifica incumplimiento del criterio "Small".<br>Detecta baja negociabilidad técnica por sobre-especificación.<br>Propone dividir la historia en dos entregables.<br>Aclara que cualquier usuario puede visualizar la lista en el MVP actual.<br>Identifica riesgo de bloqueo por complejidad. | La Gema agregó:<br>• Evaluación formal bajo INVEST.<br>• Identificación de sobrecarga funcional.<br>• Propuesta de división estratégica.<br>• Claridad sobre reglas de acceso actuales.<br>• Identificación explícita de riesgos técnicos.<br><br>Impacto: Mejora planificación ágil y reduce riesgo de incumplimiento en sprint. |
+| **Experiencia de Usuario y Estados**<br><br>Define estados (loading, vacío, error).<br>No establece métricas medibles.<br>No exige elementos visuales de gamificación. | **Experiencia Refinada y Estratégica**<br><br>Sugiere definir métricas observables (ej. tiempos máximos de carga).<br>Propone uso de iconos o colores por categoría.<br>Refuerza coherencia visual con estrategia cultural del producto. | La Gema agregó:<br>• Enfoque en calidad percibida y métricas objetivas.<br>• Integración explícita de gamificación.<br><br>Impacto: Aumenta alineación con objetivos de negocio y mejora criterios de aceptación verificables. |
+
+---
+
+# US-016: Paginación Interactiva
+
+## Historia Original
 
 **Título**: Crear componente KudoPagination  
 **Story Points**: 3  
 **Prioridad**: Media  
-**Epic**: EP-001  
+**Epic**: EP-001
 
-**Descripción**:  
+**Descripción**:
 
 **Como** empleado de Sofka  
 **Quiero** navegar por el historial de reconocimientos mediante una paginación clara  
-**Para** explorar todos los kudos enviados y recibidos sin depender de un scroll infinito  
+**Para** explorar todos los kudos enviados y recibidos sin depender de un scroll infinito
 
 **Especificación Técnica**:
 ```typescript
@@ -31,9 +177,9 @@ interface KudoPaginationProps {
 - [ ] Botón "Anterior": disabled si currentPage === 0
 - [ ] Botón "Siguiente": disabled si currentPage === totalPages - 1
 - [ ] Números de página:
-  - Mostrar 5 botones máximo: [1, 2, 3, 4, 5]
-  - Con elipsis si hay muchas: [1, 2, ..., 10, 11]
-  - Página actual destacada
+    - Mostrar 5 botones máximo: [1, 2, 3, 4, 5]
+    - Con elipsis si hay muchas: [1, 2, ..., 10, 11]
+    - Página actual destacada
 - [ ] Indicador de rango: "Mostrando 21-40 de 150 kudos" utilizando totalElements
 
 **Comportamiento de UI/UX**:
